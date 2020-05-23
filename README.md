@@ -33,6 +33,23 @@ Glow的思路很简单，和上述这些deep learning compiler一样， 有一�
 
 关于Glow的motivation其实也是很简单的，也就是说，在得到一张computational graph后，我们仅仅通过一层编译手段，将graph中的每个op都变成由一系列loop和其他低阶IR这样的优化显然是不够的。我们还必须有考虑到高阶的IR。比如对于一个多重for-loop语句来看，我们不能通过一High-Level IR: 实际很简单，就是我们通过framework得到的computational graph，针对输入的不同shape和不同data type的data，我们有专门的node来处理他们，针对不同batch size的data，我们可以构建多个glow graph来通过jit对其进行re-compute。其中包括一些storage node，constant node， placeholder node个传统的编译器来帮我们解决这个问题，多层for-loop的优化，他们是做不到的。此时，针对这个多重for-loop（卷积）我们就可以定义一种高阶的IR，例如将data的format定义为tensor（N, C, H, W）的格式，从而帮我们完成相应的optimization。有了这个motivation，glow就被设计出来了，只要让compiler的前几个stage是target-independent的，让他更加倾向于我们所需要解决的任务的data type就行。但是当compiler越接近底层的不同hardware platforms的时候，我们的低阶IR就要更加specific到硬件架构的设计了。
 
+神经网络编译器：
+
+ 神经网络编译器大概有TVM/Glow/TensorRT/TensorComprehension/XLA/Tiramisu。这些针对的都是神经网络模型推理阶段的优化，是从神经网络模型到机器代码的编译。
+ 
+ 一般过程是 
+ 
+ 神经网络模型->图优化(High-Level IR优化)->中间代码生成（例如Halide)->中间代码优化（例如TC/Tiramisu使用多面体模型进行变换，Lower-Level IR优化 ）->机器代码。
+ 
+ 它编译的是神经网络的模型，优化的是网络模型本身，各层数据数据存储的方式（如分块存储，nchw，nhcw），以及各个算子（如mlp，conv）的计算方式（如向量化，分块）等等传统编译器（GCC，Clang这些）的编译范围更广，是从源代码到机器代码的编译，
+
+首先是神经网络编译器丛中间代码到机器代码的过程可能就对应了传统编译器的整个编译过程，比如Halide->机器代码然后他们的目标都是都要针对目标处理器进行的优化。无论是什么代码/模型，最后的优化无非就是如何最大化利用硬件，比如cache的命中率，计算速度啥的，最终目标都是生成好的机器代码。
+
+
+
+
+
+
 ## High-Level IR: 
 
 实际很简单，就是我们通过framework得到的computational graph，针对输入的不同shape和不同data type的data，我们有专门的node来处理他们，针对不同batch size的data，我们可以构建多个glow graph来通过jit对其进行re-compute。其中包括一些storage node，constant node， placeholder node
